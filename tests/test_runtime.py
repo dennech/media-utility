@@ -26,6 +26,42 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(src.read_text(), rows)
             self.assertEqual(dst.stat().st_mode & 0o777, 0o600)
 
+    def test_site_session_uses_only_its_own_profile_and_cookie_domains(self):
+        from unittest.mock import patch
+        from http.cookiejar import Cookie
+        spec = importlib.util.spec_from_file_location("runtime", ROOT / "YouTubeUtilityApp/downloader_runtime.py")
+        runtime = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runtime)
+        address = "https://media.example.invalid/watch"
+        def cookie(domain, value, shared):
+            return Cookie(0, "id", value, None, False, domain, shared, shared, "/", True, True,
+                          None, True, None, None, {}, False)
+        with tempfile.TemporaryDirectory() as temp, patch.object(Path, "home", return_value=Path(temp)):
+            with self.assertRaises(ValueError):
+                runtime.site_profile(address)
+            token = runtime.hashlib.sha256(b"media.example.invalid:443").hexdigest()
+            root = Path(temp) / "Library/Application Support/Media Utility/Site Browsers" / token
+            root.mkdir(mode=0o700, parents=True)
+            (root / ".media-utility-site").write_text(token)
+            alternate = Path(temp) / "unrelated"
+            alternate.mkdir()
+            (root / "Default").symlink_to(alternate)
+            with self.assertRaises(ValueError):
+                runtime.site_profile(address)
+            (root / "Default").unlink()
+            (root / "Default").mkdir()
+            self.assertEqual(runtime.site_profile(address), (root / "Default").resolve())
+            with self.assertRaises(ValueError):
+                runtime.site_profile("https://media.example.invalid:8443/")
+            dest = Path(temp) / "session.txt"
+            runtime.write_site_session([cookie(".example.invalid", "selected", True),
+                                        cookie("example.invalid", "unrelated", False),
+                                        cookie("another.invalid", "unrelated", False)], address, dest)
+            self.assertEqual(dest.read_text().splitlines()[1:], ["media.example.invalid\tFALSE\t/\tTRUE\t0\tid\tselected"])
+            self.assertEqual(dest.stat().st_mode & 0o777, 0o600)
+            with self.assertRaises(FileExistsError):
+                runtime.write_site_session([cookie("media.example.invalid", "synthetic", False)], address, dest)
+
     def test_existing_mov_survives_invalid_source(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "media.mov"

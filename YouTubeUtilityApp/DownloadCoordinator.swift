@@ -317,14 +317,15 @@ final class DownloadCoordinator: @unchecked Sendable {
         cookieAccessMode: CookieAccessMode,
         progress: @escaping @Sendable (OperationUpdate) -> Void
     ) async throws -> PreparedDownload {
-        guard let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)),
-              let scheme = url.scheme?.lowercased(),
+        guard let input = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = input.scheme?.lowercased(),
               ["http", "https"].contains(scheme),
-              url.host?.isEmpty == false, url.user == nil, url.password == nil else {
+              input.host?.isEmpty == false, input.user == nil, input.password == nil else {
             throw DownloadError.invalidURL
         }
 
         try throwIfCancellationRequested()
+        let url = SupportedService.mediaURL(input)
         let service = SupportedService(url: url)
         progress(.status("Checking installed tools..."))
         let toolchain = try await ToolchainLocator.locate()
@@ -442,6 +443,19 @@ final class DownloadCoordinator: @unchecked Sendable {
         )
     }
 
+    func prepareChromeSession(for url: URL, in directory: URL) async throws -> URL {
+        let tools = try await ToolchainLocator.locate()
+        let target = directory.appendingPathComponent("session.txt")
+        let result = try await runTrackedProcess(executable: tools.python, arguments: [
+            "-I", "-S", "-B", tools.runtime.path, tools.ytDlp.path, "--site-session", url.absoluteString, target.path
+        ])
+        try throwIfCancellationRequested()
+        guard result.exitCode == 0 else {
+            throw DownloadError.invalidCookiesFile("The site session is unavailable. Finish signing in to the site, allow access if macOS asks, then try again.")
+        }
+        return target
+    }
+
     func createTemporaryWorkspace() throws -> URL {
         try fileManager.createDirectory(at: temporaryRootDirectory, withIntermediateDirectories: true)
 
@@ -506,7 +520,7 @@ final class DownloadCoordinator: @unchecked Sendable {
         case let .success(metadata):
             return metadata
         case let .failure(message):
-            if url.scheme?.lowercased() == "https", cookieAccessMode == .anonymous, requiresAuthenticatedRetry(message) {
+            if url.scheme?.lowercased() == "https", requiresAuthenticatedRetry(message) {
                 throw DownloadError.authenticationRequired(
                     authChallenge(
                         for: url,
@@ -650,6 +664,7 @@ final class DownloadCoordinator: @unchecked Sendable {
             executable: prepared.toolchain.ffmpeg,
             arguments: [
                 "-y",
+                "-protocol_whitelist", "file,pipe",
                 "-i", sourceURL.path,
                 "-vn",
                 "-c:a", "pcm_s16le",
@@ -709,7 +724,7 @@ final class DownloadCoordinator: @unchecked Sendable {
             return
         }
 
-        if prepared.requestURL.scheme?.lowercased() == "https", prepared.cookieAccessMode == .anonymous, requiresAuthenticatedRetry(result.stderr) {
+        if prepared.requestURL.scheme?.lowercased() == "https", requiresAuthenticatedRetry(result.stderr) {
             throw DownloadError.authenticationRequired(
                 authChallenge(
                     for: prepared.requestURL,
@@ -749,6 +764,7 @@ final class DownloadCoordinator: @unchecked Sendable {
 
         var arguments = [
             "-y",
+            "-protocol_whitelist", "file,pipe",
             "-i", sourcePath.path,
             "-progress", "pipe:2",
             "-nostats",
@@ -811,6 +827,7 @@ final class DownloadCoordinator: @unchecked Sendable {
             executable: toolchain.ffprobe,
             arguments: [
                 "-v", "error",
+                "-protocol_whitelist", "file,pipe",
                 "-show_streams",
                 "-show_format",
                 "-of", "json",
@@ -958,13 +975,16 @@ final class DownloadCoordinator: @unchecked Sendable {
     }
 
     private func ytDlpBaseArguments(toolchain: Toolchain, cookieAccessMode: CookieAccessMode) -> [String] {
-        var arguments = ["-I", "-S", toolchain.runtime.path, toolchain.ytDlp.path, "--ignore-config", "--no-plugin-dirs",
+        var arguments = ["-I", "-S", "-B", toolchain.runtime.path, toolchain.ytDlp.path, "--ignore-config", "--no-plugin-dirs",
                          "--no-remote-components", "--no-js-runtimes", "--no-cache-dir", "--no-playlist", "--ffmpeg-location", toolchain.ffmpegDirectory.path]
         switch cookieAccessMode {
         case .anonymous:
             if let deno = toolchain.deno { arguments += ["--js-runtimes", "deno:" + deno.path] }
         case let .cookiesFile(url):
             arguments += ["--downloader", "native", "--cookies", url.path]
+            if let deno = toolchain.deno, deno.path == toolchain.runtime.deletingLastPathComponent().appendingPathComponent("Engine/bin/deno").resolvingSymlinksInPath().path {
+                arguments += ["--js-runtimes", "deno:" + deno.path]
+            }
         }
         return arguments
     }
@@ -1139,7 +1159,7 @@ final class DownloadCoordinator: @unchecked Sendable {
     ) -> AuthChallenge {
         AuthChallenge(
             service: service,
-            host: (url.host ?? url.absoluteString).lowercased(),
+            requestURL: url,
             reason: friendlyMessage(from: output),
             stage: stage
         )
@@ -1185,20 +1205,32 @@ enum ToolchainLocator {
         let lock = try JSONDecoder().decode(ReleaseLock.self, from: Data(contentsOf: lockURL))
         let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
                                                    appropriateFor: nil, create: false)
-        let archive = support.appendingPathComponent("Media Utility/tools/" + lock.version + "/yt-dlp")
+        let engine = Bundle.main.resourceURL?.appendingPathComponent("Engine")
+        let packaged = Bundle.main.object(forInfoDictionaryKey: "MediaUtilityBundledEngine") as? Bool == true
+        func bundled(_ path: String) throws -> URL {
+            guard let engine else { throw DownloadError.missingTools("Please reinstall Media Utility.") }
+            let file = engine.appendingPathComponent(path).resolvingSymlinksInPath()
+            guard file.path.hasPrefix(engine.resolvingSymlinksInPath().path + "/"),
+                  FileManager.default.isExecutableFile(atPath: file.path) else {
+                throw DownloadError.missingTools("A bundled tool is missing. Please reinstall Media Utility.")
+            }
+            return file
+        }
+        let archive = packaged ? try bundled("yt-dlp") : support.appendingPathComponent("Media Utility/tools/" + lock.version + "/yt-dlp")
         guard let info = try? archive.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
               info.isRegularFile == true, let size = info.fileSize, size < 16 * 1024 * 1024,
               let data = try? Data(contentsOf: archive),
               SHA256.hash(data: data).map({ String(format: "%02x", $0) }).joined() == lock.sha256 else {
-            throw DownloadError.missingTools("Install the verified downloader with ./script/install-tools.sh.")
+            throw DownloadError.missingTools(packaged ? "The bundled downloader failed verification. Please reinstall Media Utility." : "Install the verified downloader with ./script/install-tools.sh.")
         }
-        let python = try homebrewTool("python3", formula: "python")
-        let ffmpeg = try homebrewTool("ffmpeg", formula: "ffmpeg")
-        let ffprobe = try homebrewTool("ffprobe", formula: "ffmpeg")
+        let python = packaged ? try bundled("python/bin/python3.13") : try homebrewTool("python3", formula: "python")
+        let ffmpeg = packaged ? try bundled("bin/ffmpeg") : try homebrewTool("ffmpeg", formula: "ffmpeg")
+        let ffprobe = packaged ? try bundled("bin/ffprobe") : try homebrewTool("ffprobe", formula: "ffmpeg")
         guard ffprobe.deletingLastPathComponent() == ffmpeg.deletingLastPathComponent() else {
-            throw DownloadError.toolchainBlocked("Install ffmpeg and ffprobe from the same Homebrew package.")
+            throw DownloadError.toolchainBlocked("The converter and media inspector must come from the same installation.")
         }
-        return Toolchain(runtime: runtime, deno: try? homebrewTool("deno", formula: "deno"), python: python, ytDlp: archive, ffmpeg: ffmpeg, ffprobe: ffprobe,
+        let deno = packaged ? try bundled("bin/deno") : try? homebrewTool("deno", formula: "deno")
+        return Toolchain(runtime: runtime, deno: deno, python: python, ytDlp: archive, ffmpeg: ffmpeg, ffprobe: ffprobe,
                          ytDlpVersion: lock.version, trustState: .trusted("Downloader checksum verified."))
     }
 
@@ -1321,6 +1353,12 @@ enum ProcessRunner {
         process.environment = sanitizedEnvironment()
         process.standardOutput = stdout
         process.standardError = stderr
+        // Register before launch so even a child that exits immediately signals completion.
+        let (exits, exitSignal) = AsyncStream<Int32>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        process.terminationHandler = { child in
+            exitSignal.yield(child.terminationStatus)
+            exitSignal.finish()
+        }
         try process.run()
         onStart?(process)
         defer { onFinish?(process) }
@@ -1329,8 +1367,9 @@ enum ProcessRunner {
         async let output = drain(stdout.fileHandleForReading, .stdout, limit: onOutput == nil ? 32 << 20 : 64 << 10, handler: onOutput)
         async let errors = drain(stderr.fileHandleForReading, .stderr, limit: 64 << 10, handler: onOutput)
         let (out, err) = await (output, errors)
-        process.waitUntilExit()
-        return ProcessOutput(exitCode: process.terminationStatus, stdout: out, stderr: err)
+        var iterator = exits.makeAsyncIterator()
+        guard let status = await iterator.next() else { throw DownloadError.interrupted }
+        return ProcessOutput(exitCode: status, stdout: out, stderr: err)
     }
 
     private static func drain(_ handle: FileHandle, _ stream: ProcessStream, limit: Int,
@@ -1354,7 +1393,12 @@ enum ProcessRunner {
         let source = ProcessInfo.processInfo.environment
         let fallbackPath = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"].joined(separator: ":")
         let preservedKeys = ["HOME", "TMPDIR", "LANG", "LC_ALL"]
-        var environment = ["PATH": fallbackPath]
+        var environment = ["PATH": fallbackPath, "DENO_NO_UPDATE_CHECK": "1"]
+        if Bundle.main.object(forInfoDictionaryKey: "MediaUtilityBundledEngine") as? Bool == true,
+           let bin = Bundle.main.resourceURL?.appendingPathComponent("Engine/bin") {
+            environment["PATH"] = bin.path + ":/usr/bin:/bin"
+            environment["SSL_CERT_FILE"] = "/etc/ssl/cert.pem"
+        }
 
         for key in preservedKeys {
             if let value = source[key], !value.isEmpty {

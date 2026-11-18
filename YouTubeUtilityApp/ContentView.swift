@@ -30,7 +30,7 @@ struct ContentView: View {
                             Text(viewModel.updateState.infoText)
                             Text(viewModel.toolchainStatusText)
                             Divider()
-                            Text("Downloads start anonymously. If a site requires sign-in, you can choose a cookie export for that download.")
+                            Text("Downloads start anonymously. If a site requires sign-in, you can approve a separate site session for that download.")
                         }
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(width: 280, alignment: .leading)

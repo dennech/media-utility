@@ -112,6 +112,7 @@ final class DownloadViewModel: ObservableObject {
         let request = requestID
         var destination: SaveDestination?
         var cookieWorkspace: URL?
+        var sessionAttempts = 0
 
         defer {
             if let cookieWorkspace { try? FileManager.default.removeItem(at: cookieWorkspace) }
@@ -179,11 +180,25 @@ final class DownloadViewModel: ObservableObject {
                 resetProgress()
                 if case let .authenticationRequired(challenge) = error {
                     status = .progress(challenge.promptMessage)
-                    guard let nextMode = presentCookieAccessPrompt(for: challenge, workspace: &cookieWorkspace) else {
-                        status = .note("Authentication retry canceled.")
+                    guard sessionAttempts < 2 else {
+                        status = .failure("The site still requires verification. Check that the signed-in account can play this link.")
                         return
                     }
-                    cookieAccessMode = nextMode
+                    do {
+                        if let previous = cookieWorkspace { try? FileManager.default.removeItem(at: previous) }
+                        let workspace = try coordinator.createTemporaryWorkspace()
+                        cookieWorkspace = workspace
+                        guard let session = try await SiteSignIn.authorize(challenge.requestURL, in: workspace,
+                                coordinator: coordinator, renew: sessionAttempts > 0) else {
+                            status = .note("Sign-in canceled.")
+                            return
+                        }
+                        cookieAccessMode = .cookiesFile(session)
+                        sessionAttempts += 1
+                    } catch {
+                        status = .failure(error.localizedDescription)
+                        return
+                    }
                     continue
                 }
 
@@ -255,51 +270,5 @@ final class DownloadViewModel: ObservableObject {
 
         let response = panel.runModal()
         return response == .OK ? panel.url : nil
-    }
-
-    private func presentCookieAccessPrompt(for challenge: AuthChallenge, workspace: inout URL?) -> CookieAccessMode? {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = challenge.promptTitle
-        alert.informativeText = challenge.promptMessage
-        alert.addButton(withTitle: "Cancel")
-        alert.addButton(withTitle: "Choose Cookies File…")
-        guard alert.runModal() == .alertSecondButtonReturn else { return nil }
-
-        while let source = presentCookiesFileOpenPanel() {
-            do {
-                let directory = try coordinator.createTemporaryWorkspace()
-                workspace = directory
-                let copy = directory.appendingPathComponent("session.txt")
-                try CookieFileValidator.writeScopedCopy(from: source, host: challenge.host, to: copy)
-                return .cookiesFile(copy)
-            } catch {
-                if let directory = workspace { try? FileManager.default.removeItem(at: directory) }
-                workspace = nil
-                presentValidationError(message: error.localizedDescription)
-            }
-        }
-        return nil
-    }
-
-    private func presentCookiesFileOpenPanel() -> URL? {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.title = "Choose Cookies File"
-        panel.message = "Select a Netscape cookies file to use for this request only."
-        panel.prompt = "Use File"
-        return panel.runModal() == .OK ? panel.url : nil
-    }
-
-    private func presentValidationError(message: String) {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = "Cookies file rejected"
-        alert.informativeText = message
-        alert.addButton(withTitle: "OK")
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
     }
 }

@@ -13,6 +13,16 @@ struct SaveChecks {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: root) }
 
+        try await withThrowingTaskGroup(of: Void.self) { children in
+            for _ in 0..<32 {
+                children.addTask {
+                    let result = try await ProcessRunner.run(executable: URL(fileURLWithPath: "/usr/bin/true"), arguments: [])
+                    precondition(result.exitCode == 0)
+                }
+            }
+            try await children.waitForAll()
+        }
+
         let coordinator = DownloadCoordinator()
         for ext in ["mov", "wav"] {
             let original = root.appendingPathComponent("media." + ext)
@@ -40,6 +50,14 @@ struct SaveChecks {
             mustFail { try coordinator.publish(staged: stage, to: absent) }
             let retained = try Data(contentsOf: competing)
             precondition(retained == old)
+        }
+
+        let short = URL(string: "https://youtu.be/abcdefghijk?t=7")!
+        precondition(SupportedService.mediaURL(short).absoluteString == "https://www.youtube.com/watch?v=abcdefghijk&t=7")
+        for string in ["https://youtu.be.example.invalid/abcdefghijk", "https://other.invalid/watch",
+                       "https://www.youtube.com:8443/watch?v=abcdefghijk"] {
+            let address = URL(string: string)!
+            precondition(SupportedService.mediaURL(address) == address)
         }
 
         let source = root.appendingPathComponent("export")

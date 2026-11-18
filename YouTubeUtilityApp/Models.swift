@@ -143,6 +143,24 @@ enum SupportedService: String {
         ("vk.com", .vk), ("vkvideo.ru", .vk), ("rutube.ru", .rutube), ("soundcloud.com", .soundcloud)
     ]
 
+    static func mediaURL(_ url: URL) -> URL {
+        guard var parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              parts.scheme?.lowercased() == "https", parts.port == nil || parts.port == 443 else { return url }
+        switch parts.host?.lowercased() {
+        case "youtu.be":
+            let id = String(parts.path.dropFirst())
+            guard id.range(of: #"^[A-Za-z0-9_-]{11}$"#, options: .regularExpression) != nil else { return url }
+            parts.path = "/watch"
+            parts.queryItems = [URLQueryItem(name: "v", value: id)] + (parts.queryItems ?? []).filter { $0.name != "v" }
+        case "m.youtube.com", "youtube.com":
+            break
+        default:
+            return url
+        }
+        parts.host = "www.youtube.com"
+        return parts.url ?? url
+    }
+
     init(url: URL) {
         let host = (url.host ?? "").lowercased()
         self = Self.domains.first { host == $0.0 || host.hasSuffix("." + $0.0) }?.1 ?? .generic
@@ -274,7 +292,7 @@ enum CookieAccessMode: Equatable {
         case .anonymous:
             return "anonymous"
         case .cookiesFile:
-            return "manual cookies file"
+            return "site session"
         }
     }
 }
@@ -295,14 +313,15 @@ enum AuthChallengeStage {
 
 struct AuthChallenge: Equatable {
     let service: SupportedService
-    let host: String
+    let requestURL: URL
+    var host: String { requestURL.host ?? "" }
     let reason: String
     let stage: AuthChallengeStage
 
     var promptTitle: String { "Sign in to " + host + "?" }
 
     var promptMessage: String {
-        "This site requires a session. Choose a Netscape cookie export from a dedicated profile. Only matching entries are copied for this download. Anyone with your session cookies may be able to use your account."
+        "This site requires you to sign in before downloading."
     }
 }
 
