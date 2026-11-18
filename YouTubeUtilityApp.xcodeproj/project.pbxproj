@@ -1,0 +1,273 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000010000000000000001 /* YouTubeUtilityApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000110000000000000001 /* YouTubeUtilityApp.swift */; };
+		A10000020000000000000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000120000000000000001 /* ContentView.swift */; };
+		A10000030000000000000001 /* DownloadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000130000000000000001 /* DownloadViewModel.swift */; };
+		A10000040000000000000001 /* DownloadCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000140000000000000001 /* DownloadCoordinator.swift */; };
+		A10000050000000000000001 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000150000000000000001 /* Models.swift */; };
+		A10000060000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000170000000000000001 /* Assets.xcassets */; };
+		A10000090000000000000001 /* yt-dlp-lock.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000190000000000000001 /* yt-dlp-lock.json */; };
+		A100000A0000000000000001 /* downloader_runtime.py in Resources */ = {isa = PBXBuildFile; fileRef = A100001A0000000000000001 /* downloader_runtime.py */; };
+		A10000070000000000000001 /* UpdateCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000180000000000000001 /* UpdateCoordinator.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A10000110000000000000001 /* YouTubeUtilityApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeUtilityApp.swift; sourceTree = "<group>"; };
+		A10000120000000000000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A10000130000000000000001 /* DownloadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadViewModel.swift; sourceTree = "<group>"; };
+		A10000140000000000000001 /* DownloadCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadCoordinator.swift; sourceTree = "<group>"; };
+		A10000150000000000000001 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A10000160000000000000001 /* Media Utility.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Media Utility.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000170000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10000190000000000000001 /* yt-dlp-lock.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = yt-dlp-lock.json; sourceTree = "<group>"; };
+		A100001A0000000000000001 /* downloader_runtime.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = downloader_runtime.py; sourceTree = "<group>"; };
+		A10000180000000000000001 /* UpdateCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCoordinator.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A10000210000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10000310000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A10000320000000000000001 /* YouTubeUtilityApp */,
+				A10000330000000000000001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A10000320000000000000001 /* YouTubeUtilityApp */ = {
+			isa = PBXGroup;
+			children = (
+				A10000170000000000000001 /* Assets.xcassets */,
+				A10000190000000000000001 /* yt-dlp-lock.json */,
+				A100001A0000000000000001 /* downloader_runtime.py */,
+				A10000110000000000000001 /* YouTubeUtilityApp.swift */,
+				A10000120000000000000001 /* ContentView.swift */,
+				A10000130000000000000001 /* DownloadViewModel.swift */,
+				A10000140000000000000001 /* DownloadCoordinator.swift */,
+				A10000150000000000000001 /* Models.swift */,
+				A10000180000000000000001 /* UpdateCoordinator.swift */,
+			);
+			path = YouTubeUtilityApp;
+			sourceTree = "<group>";
+		};
+		A10000330000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10000160000000000000001 /* Media Utility.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10000410000000000000001 /* YouTubeUtilityApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000530000000000000001 /* Build configuration list for PBXNativeTarget "YouTubeUtilityApp" */;
+			buildPhases = (
+				A10000220000000000000001 /* Sources */,
+				A10000210000000000000001 /* Frameworks */,
+				A10000230000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = YouTubeUtilityApp;
+			productName = YouTubeUtilityApp;
+			productReference = A10000160000000000000001 /* Media Utility.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10000610000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					A10000410000000000000001 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+				};
+			};
+			buildConfigurationList = A10000510000000000000001 /* Build configuration list for PBXProject "YouTubeUtilityApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A10000310000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A10000330000000000000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A10000410000000000000001 /* YouTubeUtilityApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A10000230000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000060000000000000001 /* Assets.xcassets in Resources */,
+				A10000090000000000000001 /* yt-dlp-lock.json in Resources */,
+				A100000A0000000000000001 /* downloader_runtime.py in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10000220000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000020000000000000001 /* ContentView.swift in Sources */,
+				A10000040000000000000001 /* DownloadCoordinator.swift in Sources */,
+				A10000050000000000000001 /* Models.swift in Sources */,
+				A10000030000000000000001 /* DownloadViewModel.swift in Sources */,
+				A10000070000000000000001 /* UpdateCoordinator.swift in Sources */,
+				A10000010000000000000001 /* YouTubeUtilityApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A10000710000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+			};
+			name = Debug;
+		};
+		A10000720000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+			};
+			name = Release;
+		};
+		A10000730000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				EXECUTABLE_NAME = YouTubeUtilityApp;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Media Utility";
+				INFOPLIST_KEY_CFBundleName = "Media Utility";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.dennech.YouTubeUtilityApp;
+				PRODUCT_NAME = "Media Utility";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A10000740000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				EXECUTABLE_NAME = YouTubeUtilityApp;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Media Utility";
+				INFOPLIST_KEY_CFBundleName = "Media Utility";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.dennech.YouTubeUtilityApp;
+				PRODUCT_NAME = "Media Utility";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10000510000000000000001 /* Build configuration list for PBXProject "YouTubeUtilityApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000710000000000000001 /* Debug */,
+				A10000720000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000530000000000000001 /* Build configuration list for PBXNativeTarget "YouTubeUtilityApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000730000000000000001 /* Debug */,
+				A10000740000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A10000610000000000000001 /* Project object */;
+}

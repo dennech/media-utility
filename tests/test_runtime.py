@@ -1,0 +1,69 @@
+"""Offline regression checks using synthetic, non-secret session values."""
+import importlib.util
+import os
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from urllib.request import Request
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+import download_youtube as media
+
+
+class RuntimeTests(unittest.TestCase):
+    def test_scoped_export(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dst = Path(tmp) / "in", Path(tmp) / "out"
+            rows = ("# Netscape HTTP Cookie File\n"
+                    "#HttpOnly_.youtube.com\tTRUE\t/\tFALSE\t0\tone\tfixture\n"
+                    "youtube.com\tFALSE\t/\tTRUE\t0\ttwo\tfixture\n"
+                    "other.invalid\tFALSE\t/\tTRUE\t0\tthree\tfixture\n")
+            src.write_text(rows)
+            media.write_scoped_cookies(src, "www.youtube.com", dst)
+            self.assertEqual(dst.read_text().splitlines()[1:], ["#HttpOnly_www.youtube.com\tFALSE\t/\tTRUE\t0\tone\tfixture"])
+            self.assertEqual(src.read_text(), rows)
+            self.assertEqual(dst.stat().st_mode & 0o777, 0o600)
+
+    def test_existing_mov_survives_invalid_source(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "media.mov"
+            target.write_bytes(b"original")
+            with self.assertRaises(Exception):
+                media.convert_to_mov(Path(tmp) / "missing", target, 18, "medium", True)
+            self.assertEqual(target.read_bytes(), b"original")
+
+    def test_session_policy_in_isolated_child(self):
+        import subprocess
+        command = media.yt_dlp_base_command(None)
+        archive = command[command.index("-S") + 2]
+        subprocess.run([command[0], "-I", "-S", __file__, "--session", archive], check=True)
+
+
+if __name__ == "__main__" and sys.argv[1:2] == ["--session"]:
+    archive = sys.argv[2]
+    sys.path.insert(0, archive)
+    from yt_dlp.cookies import YoutubeDLCookieJar
+    spec = importlib.util.spec_from_file_location("media_runtime", ROOT / "YouTubeUtilityApp/downloader_runtime.py")
+    runtime = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runtime)
+    with tempfile.TemporaryDirectory() as temp:
+        row = Path(temp) / "fixture"
+        row.write_text("# Netscape HTTP Cookie File\nmedia.example.invalid\tFALSE\t/\tTRUE\t0\tselected\tfixture\n")
+        runtime.restrict_session("https://media.example.invalid/watch")
+        jar = YoutubeDLCookieJar(row)
+        jar.load()
+        assert jar.get_cookie_header("https://media.example.invalid/video") == "selected=fixture"
+        for url in ["http://media.example.invalid/video", "https://child.media.example.invalid/video",
+                    "https://media.example.invalid:8443/video", "https://other.invalid/video"]:
+            assert not jar.get_cookie_header(url)
+        import subprocess
+        try:
+            subprocess.run(["ffmpeg", "-cookies", "synthetic"], check=False)
+        except PermissionError:
+            pass
+        else:
+            raise AssertionError("External network downloader was allowed")
+elif __name__ == "__main__":
+    unittest.main()
