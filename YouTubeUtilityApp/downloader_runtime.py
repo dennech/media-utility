@@ -139,7 +139,8 @@ def main():
         if "--cookies" in arguments:
             deno = Path(__file__).parent / "Engine/bin/deno"
             restrict_session(arguments[-1], deno if deno.is_file() else None)
-        yt_dlp.main(arguments)
+        # Match yt-dlp #18124 while keeping the verified 2026.10.21 archive.
+        yt_dlp.main(["--extractor-args", "youtube:player_js_variant=tv", *arguments])
 
 
 if __name__ == "__main__":

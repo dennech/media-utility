@@ -76,8 +76,36 @@ class RuntimeTests(unittest.TestCase):
         archive = command[command.index("-S") + 2]
         subprocess.run([command[0], "-I", "-S", __file__, "--session", archive], check=True)
 
+    def test_runtime_selects_compatible_youtube_player(self):
+        import subprocess
+        command = media.yt_dlp_base_command(None)
+        archive = command[command.index("-S") + 2]
+        subprocess.run([command[0], "-I", "-S", "-B", __file__, "--player", archive], check=True)
 
-if __name__ == "__main__" and sys.argv[1:2] == ["--session"]:
+
+if __name__ == "__main__" and sys.argv[1:2] == ["--player"]:
+    import runpy
+    from unittest.mock import patch
+
+    archive = sys.argv[2]
+    sys.path.insert(0, archive)
+    import yt_dlp
+    from yt_dlp.extractor.youtube._video import YoutubeIE
+
+    def check_player(arguments):
+        options = yt_dlp.parse_options(arguments).ydl_opts
+        with yt_dlp.YoutubeDL(options, auto_init=False) as downloader:
+            extractor = YoutubeIE(downloader)
+            player_url = extractor._construct_player_url(player_id="deadbeef")
+            assert extractor._get_player_id_variant_and_path(player_url)[1] == "tv", player_url
+
+    runtime = ROOT / "YouTubeUtilityApp/downloader_runtime.py"
+    argv = [str(runtime), archive, "--ignore-config", "--no-remote-components", "--",
+            "https://www.youtube.com/watch?v=abcdefghijk"]
+    with patch.object(yt_dlp, "main", side_effect=check_player) as start, patch.object(sys, "argv", argv):
+        runpy.run_path(str(runtime), run_name="__main__")
+        start.assert_called_once()
+elif __name__ == "__main__" and sys.argv[1:2] == ["--session"]:
     archive = sys.argv[2]
     sys.path.insert(0, archive)
     from yt_dlp.cookies import YoutubeDLCookieJar
